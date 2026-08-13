@@ -14,7 +14,8 @@ pipeline:
   RealWorldExtractor:
     call:
       gpt_api_key: null
-      gpt_version: 4o
+      gpt_version: "5.4"
+      gpt_api_base_url: https://kjapi.botsmart.net/v1
       max_retries: 3
       retry_wait_time: 5.0
       captions: null
@@ -27,7 +28,8 @@ pipeline:
   DigitalCousinMatcher:
     call:
       gpt_api_key: null
-      gpt_version: 4o
+      gpt_version: "5.4"
+      gpt_api_base_url: https://kjapi.botsmart.net/v1
       max_retries: 3
       retry_wait_time: 5.0
       top_k_categories: 3
@@ -46,7 +48,7 @@ pipeline:
       sampling_method: random
       resolve_collision: true
       discard_objs: null
-      visualize_scene: true
+      visualize_scene: false
       visualize_scene_tilt_angle: 0
       visualize_scene_radius: 5
-      save_visualization: true
+      save_visualization: false

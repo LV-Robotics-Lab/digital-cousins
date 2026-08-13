@@ -10,6 +10,7 @@ import argparse
 import os
 from copy import deepcopy
 from digital_cousins.models.feature_matcher import FeatureMatcher
+from digital_cousins.models.gpt import GPT
 from digital_cousins.pipeline.extraction import RealWorldExtractor
 from digital_cousins.pipeline.matching import DigitalCousinMatcher
 from digital_cousins.pipeline.generation import SimulatedSceneGenerator
@@ -42,6 +43,7 @@ class ACDC:
             step_2_output_path=None,
             gpt_api_key=None,
             gpt_version=None,
+            gpt_api_base_url=None,
             max_retries=None,
             retry_wait_time=None,
     ):
@@ -69,6 +71,8 @@ class ACDC:
                 loaded config)
             gpt_version (None or str): If specified, the GPT version to use (will override any value found in the
                 loaded config)
+            gpt_api_base_url (None or str): If specified, the GPT-compatible API base URL to use (will override any
+                value found in the loaded config)
             max_retries (None or int): If specified, number of retries when querying GPT (will override any value found 
                 in the loaded config)
             retry_wait_time (None or float): If specified, number of seconds to wait in between re-querying GPT (will 
@@ -87,6 +91,9 @@ class ACDC:
         if gpt_version is not None:
             config["pipeline"]["RealWorldExtractor"]["call"]["gpt_version"] = gpt_version
             config["pipeline"]["DigitalCousinMatcher"]["call"]["gpt_version"] = gpt_version
+        if gpt_api_base_url is not None:
+            config["pipeline"]["RealWorldExtractor"]["call"]["gpt_api_base_url"] = gpt_api_base_url
+            config["pipeline"]["DigitalCousinMatcher"]["call"]["gpt_api_base_url"] = gpt_api_base_url
         if max_retries is not None:
             config["pipeline"]["RealWorldExtractor"]["call"]["max_retries"] = max_retries
             config["pipeline"]["DigitalCousinMatcher"]["call"]["max_retries"] = max_retries
@@ -188,6 +195,8 @@ def main(args):
         step_1_output_path=args.step_1_output_path,
         step_2_output_path=args.step_2_output_path,
         gpt_api_key=args.gpt_api_key,
+        gpt_version=args.gpt_version,
+        gpt_api_base_url=args.gpt_api_base_url,
         max_retries=args.max_retries,
         retry_wait_time=args.retry_wait_time,
     )
@@ -200,8 +209,12 @@ if __name__ == "__main__":
                         help="Absolute path to input RGB file to use")
     parser.add_argument("--config", type=str, default=None,
                         help="Absolute path to config file to use. If not specified, will use default.")
-    parser.add_argument("--gpt_api_key", type=str, default=None,
-                        help="GPT API key to use. If not specified, will use value found from config file.")
+    parser.add_argument("--gpt_api_key", type=str, default=os.getenv("BOTSMART_API_KEY"),
+                        help="GPT API key to use. Defaults to BOTSMART_API_KEY, then the config file.")
+    parser.add_argument("--gpt_version", type=str, default=None, choices=list(GPT.VERSIONS.keys()),
+                        help=f"GPT model version to use. Valid options: {list(GPT.VERSIONS.keys())}")
+    parser.add_argument("--gpt_api_base_url", type=str, default=None,
+                        help="GPT-compatible API base URL. If not specified, will use the config file.")
     parser.add_argument("--max_retries", type=int, default=None,
                         help="Maximum number of retries to attempt when querying GPT. If not specified, will use value found from config file.")
     parser.add_argument("--retry_wait_time", type=float, default=None,

@@ -169,10 +169,12 @@ In order to use this repo, we require both the asset image and BEHAVIOR datasets
 To validate that the entire installation process completed successfully, please run our set of unit tests:
 
 ```bash
-python tests/test_models.py --gpt_api_key <KEY> --gpt_version 4o
+read -rsp 'BotSmart API key: ' BOTSMART_API_KEY && export BOTSMART_API_KEY && echo
+python tests/test_models.py --gpt_version 5.4 --gpt_api_base_url https://kjapi.botsmart.net/v1
 ```
-- `--gpt_api_key` specifies the GPT API key to use for GPT queries. Must be compatible with `--gpt_version`
-- `--gpt_version` (optional) specifies the GPT version to use. Default is 4o
+- `--gpt_api_key` specifies the GPT API key to use. If omitted, `BOTSMART_API_KEY` is used
+- `--gpt_version` (optional) specifies the GPT version to use. Default is `5.4`
+- `--gpt_api_base_url` (optional) specifies the OpenAI-compatible API base URL. Default is BotSmart
 
 
 ## Usage
@@ -180,11 +182,13 @@ python tests/test_models.py --gpt_api_key <KEY> --gpt_version 4o
 ### ACDC Pipeline
 Usage is straightforward, simply run our ACDC pipeline on any input image you'd like via our entrypoint:
 ```sh
-python digital_cousins/pipeline/acdc.py --input_path <INPUT_IMG_PATH> [--config <CONFIG>] [--gpt_api_key <KEY>] [--max_retries <N_RETRIES>] [--retry_wait_time <TIME>]
+python digital_cousins/pipeline/acdc.py --input_path <INPUT_IMG_PATH> [--config <CONFIG>] [--gpt_api_key <KEY>] [--gpt_version <VERSION>] [--gpt_api_base_url <URL>] [--max_retries <N_RETRIES>] [--retry_wait_time <TIME>]
 ```
 - `--input_path` specifies the path to the input RGB image ot use
 - `--config` (optional) specifies the path to the config to use. If not set, will use the default config at [`digital_cousins/configs/default.yaml`](https://github.com/cremebrule/acdc/blob/main/acdc/configs/default.yaml)
-- `--gpt_api_key` (optional) specifies the GPT API key to use for GPT queries. If not set, this must be set in the loaded config
+- `--gpt_api_key` (optional) specifies the GPT API key to use for GPT queries. If omitted, `BOTSMART_API_KEY` is used
+- `--gpt_version` (optional) specifies the GPT model version
+- `--gpt_api_base_url` (optional) specifies the OpenAI-compatible API base URL
 - `--max_retries` (optional) specifies the maximum number of attempts when querying GPT. If not set, will fall back to the value in the loaded config
 - `--retry_wait_time` (optional) specifies the number of seconds to wait in between GPT re-queries. If not set, will fall back to the value in the loaded config
 

@@ -68,7 +68,11 @@ def test_faiss(args):
 
 def test_gpt(args):
     from digital_cousins.models.gpt import GPT
-    gpt = GPT(api_key=args.gpt_api_key, version=args.gpt_version)
+    gpt = GPT(
+        api_key=args.gpt_api_key,
+        version=args.gpt_version,
+        api_base_url=args.gpt_api_base_url,
+    )
     obj_caption_prompt_payload = gpt.payload_get_object_caption(img_path=TEST_IMG_PATH)
     gpt_text_response = gpt(payload=obj_caption_prompt_payload, verbose=True)
     print(f"GPT test response:\n\n{gpt_text_response}")
@@ -139,6 +143,7 @@ def test_acdc_step_1(args):
         step_2_output_path=None,
         gpt_api_key=args.gpt_api_key,
         gpt_version=args.gpt_version,
+        gpt_api_base_url=args.gpt_api_base_url,
     )
     del pipeline
 
@@ -155,6 +160,7 @@ def test_acdc_step_2(args):
         step_2_output_path=None,
         gpt_api_key=args.gpt_api_key,
         gpt_version=args.gpt_version,
+        gpt_api_base_url=args.gpt_api_base_url,
     )
     del pipeline
 
@@ -170,6 +176,7 @@ def test_acdc_step_3(args):
         step_2_output_path=f"{TEST_DIR}/acdc_output/step_2_output/step_2_output_info.json",
         gpt_api_key=args.gpt_api_key,
         gpt_version=args.gpt_version,
+        gpt_api_base_url=args.gpt_api_base_url,
     )
     del pipeline
 
@@ -218,10 +225,12 @@ def main(args):
 if __name__ == "__main__":
     # Define args
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gpt_api_key", type=str, required=True,
-                        help="GPT API key to use. Must be compatible with GPT model specified")
-    parser.add_argument("--gpt_version", type=str, default="4o", choices=list(GPT.VERSIONS.keys()),
+    parser.add_argument("--gpt_api_key", type=str, default=os.getenv("BOTSMART_API_KEY"),
+                        help="GPT API key to use. Defaults to BOTSMART_API_KEY.")
+    parser.add_argument("--gpt_version", type=str, default="5.4", choices=list(GPT.VERSIONS.keys()),
                         help=f"GPT model version to use. Valid options: {list(GPT.VERSIONS.keys())}")
+    parser.add_argument("--gpt_api_base_url", type=str, default=GPT.DEFAULT_API_BASE_URL,
+                        help="GPT-compatible API base URL")
 
     args = parser.parse_args()
 

@@ -10,25 +10,30 @@ class GPT:
         "4v": "gpt-4-vision-preview",
         "4o": "gpt-4o",
         "4o-mini": "gpt-4o-mini",
+        "5.4": "gpt-5.4",
     }
+    DEFAULT_API_BASE_URL = "https://kjapi.botsmart.net/v1"
 
     def __init__(
             self,
             api_key,
-            version="4o",
+            version="5.4",
+            api_base_url=DEFAULT_API_BASE_URL,
             max_retries=3,
             retry_wait_time=5,
     ):
         """
         Args:
             api_key (str): Key to use for querying GPT
-            version (str): GPT version to use. Valid options are: {4o, 4o-mini, 4v}
+            version (str): GPT version to use. Valid options are defined in VERSIONS
+            api_base_url (str): Base URL for the OpenAI-compatible API
             max_retries (int): The maximum number of retries to prompt GPT when receiving server error
             retry_wait_time (float): Number of seconds to wait between GPT query retries
         """
         self.api_key = api_key
         assert version in self.VERSIONS, f"Got invalid GPT version! Valid options are: {self.VERSIONS}, got: {version}"
         self.version = version
+        self.api_base_url = api_base_url.rstrip("/")
         self.max_retries = max_retries
         self.retry_wait_time = retry_wait_time
 
@@ -51,17 +56,26 @@ class GPT:
                 if verbose:
                     print(f"Querying GPT-{self.version} API...")
 
-                response = requests.post("https://api.openai.com/v1/chat/completions", headers=self.query_header, json=payload)
-                response.raise_for_status()  # Raise an error for HTTP error responses
+                response = requests.post(
+                    f"{self.api_base_url}/responses",
+                    headers=self.query_header,
+                    json=self._to_responses_payload(payload),
+                )
+                if not response.ok:
+                    try:
+                        error_detail = response.json().get("error", {})
+                    except ValueError:
+                        error_detail = response.text[:500]
+                    raise requests.HTTPError(
+                        f"{response.status_code} {response.reason}; API response: {error_detail}",
+                        response=response,
+                    )
                 response_data = response.json()
-
-                if "choices" not in response_data.keys():
-                    raise ValueError(f"Got error while querying GPT-{self.version} API! Response:\n\n{response.json()}")
 
                 if verbose:
                     print(f"Finished querying GPT-{self.version}.")
-                
-                return response_data["choices"][0]["message"]["content"]
+
+                return self._extract_response_text(response_data)
             
             except Exception as e:
                 attempts += 1
@@ -72,6 +86,56 @@ class GPT:
                 else:
                     print(f"Failed to query GPT-{self.version} API after {self.max_retries} attempts.")
                     return None
+
+    @staticmethod
+    def _to_responses_payload(payload):
+        """Convert the project's Chat Completions payload to Responses API format."""
+        response_input = []
+        for message in payload["messages"]:
+            message_content = message["content"]
+            if isinstance(message_content, str):
+                message_content = [{"type": "text", "text": message_content}]
+
+            content = []
+            for item in message_content:
+                item_type = item["type"]
+                if item_type in {"text", "input_text"}:
+                    content.append({"type": "input_text", "text": item["text"]})
+                elif item_type in {"image_url", "input_image"}:
+                    image_url = item["image_url"]
+                    if isinstance(image_url, dict):
+                        image_url = image_url["url"]
+                    content.append({"type": "input_image", "image_url": image_url})
+                else:
+                    raise ValueError(f"Unsupported GPT content type: {item_type}")
+
+            response_input.append({"role": message["role"], "content": content})
+
+        response_payload = {
+            "model": payload["model"],
+            "input": response_input,
+        }
+        if "max_tokens" in payload:
+            response_payload["max_output_tokens"] = payload["max_tokens"]
+        if "temperature" in payload:
+            response_payload["temperature"] = payload["temperature"]
+        return response_payload
+
+    @staticmethod
+    def _extract_response_text(response_data):
+        """Extract all final text blocks from a Responses API response."""
+        if response_data.get("output_text"):
+            return response_data["output_text"]
+
+        text_blocks = []
+        for output_item in response_data.get("output", []):
+            for content_item in output_item.get("content", []):
+                if content_item.get("type") == "output_text" and "text" in content_item:
+                    text_blocks.append(content_item["text"])
+
+        if not text_blocks:
+            raise ValueError(f"GPT response did not contain output text: {response_data}")
+        return "\n".join(text_blocks)
 
     @property
     def query_header(self):

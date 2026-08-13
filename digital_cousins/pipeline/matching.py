@@ -69,7 +69,8 @@ class DigitalCousinMatcher:
             self,
             step_1_output_path,
             gpt_api_key,
-            gpt_version="4o",
+            gpt_version="5.4",
+            gpt_api_base_url=GPT.DEFAULT_API_BASE_URL,
             max_retries=3,
             retry_wait_time=5,
             top_k_categories=3,
@@ -91,9 +92,9 @@ class DigitalCousinMatcher:
 
         Args:
             step_1_output_path (str): Absolute path to the output file generated from Step 1 (RealWorldExtractor)
-            gpt_api_key (str): Valid GPT-4O compatible API key
-            gpt_version (str): GPT version to use. Valid options are {"4o", "4v"}.
-                Default is "4o", which we've found to work empirically better than 4V
+            gpt_api_key (str): API key for the configured GPT-compatible endpoint
+            gpt_version (str): GPT version to use. Valid options are defined by GPT.VERSIONS.
+            gpt_api_base_url (str): Base URL for the GPT-compatible API
             max_retries (int): The maximum number of retries to prompt GPT when receiving server error
             retry_wait_time (float): Number of seconds to wait between GPT query retries
             top_k_categories (int): Number of closest categories from the OmniGibson dataset from which digital
@@ -220,6 +221,7 @@ class DigitalCousinMatcher:
         gpt = GPT(
             api_key=gpt_api_key,
             version=gpt_version,
+            api_base_url=gpt_api_base_url,
             max_retries=max_retries,
             retry_wait_time=retry_wait_time,
         )
